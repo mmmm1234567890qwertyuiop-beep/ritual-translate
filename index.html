@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ritual Translate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Michroma&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon: #00ff88;
+            --neon-dim: rgba(0, 255, 136, 0.15);
+            --dark-space: #010203;
+            --dark-green-bg: rgba(5, 15, 10, 0.95); 
+            --input-bg: rgba(0, 0, 0, 0.7);
+        }
+
+        /* --- СТИЛИ ИНТРО --- */
+        #ritual-intro {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: opacity 1.5s ease-out;
+        }
+
+        #intro-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .intro-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            font-size: 42px;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            z-index: 10000;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: fadeInOut 3.5s forwards;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            text-align: center;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+            30% { opacity: 1; transform: scale(1); filter: blur(0px); }
+            70% { opacity: 1; transform: scale(1.05); filter: blur(0px); }
+            100% { opacity: 0; transform: scale(1.1); filter: blur(5px); }
+        }
+
+        body.intro-active { overflow: hidden; }
+
+        body { 
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: var(--dark-space); color: white;
+            display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden;
+        }
+
+        #galaxy-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        nav {
+            width: 100%; display: flex; justify-content: space-between;
+            align-items: center; padding: 60px 80px 20px 80px; box-sizing: border-box;
+        }
+        .brand-section { display: flex; align-items: center; gap: 20px; }
+        .logo-box img { height: 50px; filter: drop-shadow(0 0 15px var(--neon)); }
+        .title-group h1 { font-family: 'Orbitron', sans-serif; margin: 0; font-size: 34px; text-transform: uppercase; color: var(--neon); letter-spacing: 3px; }
+        .author { font-family: 'Michroma', sans-serif; font-size: 10px; color: rgba(255,255,255,0.3); margin-bottom: 5px; letter-spacing: 1px; }
+
+        .btn-wallet {
+            font-family: 'Orbitron', sans-serif; border: 2px solid var(--neon);
+            background: transparent; color: var(--neon); padding: 12px 28px;
+            border-radius: 4px; font-size: 12px; font-weight: 900; cursor: pointer; transition: 0.3s;
+            margin-right: 40px; text-transform: uppercase;
+        }
+        .btn-wallet:hover { background: var(--neon); color: #000; box-shadow: 0 0 25px var(--neon); }
+
+        .header-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--neon), transparent); margin-bottom: 50px; opacity: 0.6; }
+
+        .container { flex: 1; display: flex; align-items: flex-start; justify-content: center; position: relative; padding-bottom: 40px; }
+
+        .translator-card {
+            position: relative; width: 90%; max-width: 1000px; 
+            background: var(--dark-green-bg); border: 1px solid var(--neon-dim);
+            border-radius: 12px; padding: 30px; backdrop-filter: blur(20px);
+            z-index: 10;
+        }
+
+        #history-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark-green-bg); border-radius: 12px;
+            padding: 30px; box-sizing: border-box; display: none; 
+            z-index: 50; overflow-y: auto;
+        }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--neon-dim); padding-bottom: 10px; }
+        .history-title { font-family: 'Orbitron', sans-serif; color: var(--neon); font-size: 14px; text-transform: uppercase; }
+        .close-history { color: var(--neon); cursor: pointer; font-family: 'Orbitron'; font-size: 12px; }
+        .history-item { font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0, 255, 136, 0.1); color: #ccc; }
+        .history-item b { color: var(--neon); display: block; margin-top: 5px; }
+
+        .selectors-wrapper { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; z-index: 20; position: relative; }
+        .custom-select { position: relative; flex: 1; font-family: 'Orbitron', sans-serif; font-size: 11px; }
+        .select-selected {
+            background: var(--input-bg); border: 1px solid rgba(0, 255, 136, 0.2);
+            color: #fff; padding: 12px; border-radius: 6px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .select-selected:hover { border-color: var(--neon); }
+        .select-items {
+            position: absolute; background: #05120a; border: 1px solid var(--neon);
+            top: 100%; left: 0; right: 0; z-index: 999; border-radius: 6px;
+            margin-top: 5px; max-height: 200px; overflow-y: auto; display: none;
+        }
+        .select-items div { color: #fff; padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(0, 255, 136, 0.05); }
+        .select-items div:hover { background: var(--neon); color: #000; }
+        .select-show { display: block; }
+
+        .btn-swap { background: transparent; border: 1px solid var(--neon-dim); color: var(--neon); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .btn-swap:hover { border-color: var(--neon); transform: rotate(180deg); }
+
+        .work-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .column-header { display: flex; justify-content: center; width: 100%; margin-bottom: 15px; }
+        .block-label { 
+            font-family: 'Orbitron', sans-serif; color: var(--neon); font-size: 13px; text-transform: uppercase; font-weight: 700; letter-spacing: 3px;
+            background: rgba(0, 255, 136, 0.05); padding: 6px 24px; border: 1px solid var(--neon-dim); border-radius: 4px;
+        }
+
+        textarea, .output-view {
+            width: 100%; height: 320px; background: var(--input-bg);
+            border: 1px solid rgba(0, 255, 136, 0.1); border-radius: 8px;
+            padding: 20px; color: #fff; font-size: 16px; box-sizing: border-box; resize: none; outline: none; line-height: 1.5;
+        }
+        .output-view { color: var(--neon); overflow-y: auto; white-space: pre-wrap; }
+
+        .btn-execute {
+            font-family: 'Orbitron', sans-serif; width: 100%; margin-top: 25px; padding: 22px;
+            background: var(--neon); color: #000; border: none; border-radius: 6px;
+            font-size: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: 0.3s;
+        }
+        .btn-execute:hover { box-shadow: 0 0 30px var(--neon); }
+
+        .btn-copy { 
+            font-family: 'Orbitron', sans-serif; background: transparent; 
+            border: 1px solid var(--neon); color: var(--neon); 
+            padding: 8px 22px; font-size: 11px; cursor: pointer; 
+            text-transform: uppercase; transition: 0.3s; margin-top: 10px; float: right; 
+        }
+        .btn-copy:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+
+        .history-trigger { 
+            position: absolute; top: -35px; left: 0; 
+            font-family: 'Orbitron', sans-serif; color: var(--neon); 
+            background: transparent; border: 1px solid var(--neon-dim); 
+            padding: 6px 18px; font-size: 10px; cursor: pointer; 
+            text-transform: uppercase; transition: 0.3s; z-index: 100;
+        }
+        .history-trigger:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+
+        .footer-line { 
+            width: 30%; 
+            height: 1px; 
+            background: linear-gradient(90deg, transparent, var(--neon), transparent); 
+            margin: auto auto 0 auto; 
+            opacity: 0.5; 
+        }
+        footer { 
+            width: 100%; 
+            padding: 20px 0 30px 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 10px; 
+            font-family: 'Michroma'; 
+            color: #444; 
+            gap: 15px; 
+        }
+        footer a { color: #444; text-decoration: none; transition: 0.3s; }
+        footer a:hover { color: var(--neon); text-shadow: 0 0 8px var(--neon); }
+    </style>
+</head>
+<body class="intro-active">
+
+    <div id="ritual-intro">
+        <canvas id="intro-canvas"></canvas>
+        <div class="intro-title">Ritual Translate</div>
+    </div>
+
+    <canvas id="galaxy-canvas"></canvas>
+
+    <nav>
+        <div class="brand-section">
+            <div class="logo-box"><img src="logo.png" alt="Ritual"></div>
+            <div class="title-group">
+                <div class="author">by tembi4kiNN</div>
+                <h1>Ritual Translate</h1>
+            </div>
+        </div>
+        <button class="btn-wallet" id="wallet-connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    </nav>
+
+    <div class="header-line"></div>
+
+    <div class="container">
+        <div class="translator-card">
+            <button class="history-trigger" onclick="toggleHistory()">History</button>
+
+            <div id="history-panel">
+                <div class="history-header">
+                    <div class="history-title">Translation History</div>
+                    <div class="close-history" onclick="toggleHistory()">[ CLOSE ]</div>
+                </div>
+                <div id="history-list">
+                    <div style="font-size: 10px; color: #555; text-align: center; margin-top: 20px;">No records yet...</div>
+                </div>
+            </div>
+
+            <div class="selectors-wrapper">
+                <div class="custom-select" id="select-from">
+                    <div class="select-selected" data-value="en-GB">English</div>
+                    <div class="select-items">
+                        <div data-value="en-GB">English</div>
+                        <div data-value="ru-RU">Russian</div>
+                        <div data-value="de-DE">German</div>
+                        <div data-value="fr-FR">French</div>
+                        <div data-value="es-ES">Spanish</div>
+                        <div data-value="zh-CN">Chinese</div>
+                        <div data-value="ja-JP">Japanese</div>
+                        <div data-value="ko-KR">Korean</div>
+                        <div data-value="it-IT">Italian</div>
+                        <div data-value="ar-SA">Arabic</div>
+                    </div>
+                </div>
+
+                <button class="btn-swap" onclick="swapCustomLanguages()">⇄</button>
+
+                <div class="custom-select" id="select-to">
+                    <div class="select-selected" data-value="ru-RU">Russian</div>
+                    <div class="select-items">
+                        <div data-value="en-GB">English</div>
+                        <div data-value="ru-RU">Russian</div>
+                        <div data-value="de-DE">German</div>
+                        <div data-value="fr-FR">French</div>
+                        <div data-value="es-ES">Spanish</div>
+                        <div data-value="zh-CN">Chinese</div>
+                        <div data-value="ja-JP">Japanese</div>
+                        <div data-value="ko-KR">Korean</div>
+                        <div data-value="it-IT">Italian</div>
+                        <div data-value="ar-SA">Arabic</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="work-area">
+                <div>
+                    <div class="column-header"><div class="block-label">HUMAN</div></div>
+                    <textarea id="source" placeholder="Enter text..."></textarea>
+                </div>
+                <div>
+                    <div class="column-header"><div class="block-label">RITUAL</div></div>
+                    <div id="target" class="output-view">Translation...</div>
+                    <button class="btn-copy" onclick="copyResult()">Copy Result</button>
+                </div>
+            </div>
+            <button class="btn-execute" id="translate-btn" onclick="payWithMetaMask()">Translate</button>
+        </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <footer>
+        <a href="https://docs.ritualfoundation.org/" target="_blank">Docs</a> | 
+        <a href="https://www.ritualfoundation.org/" target="_blank">Ritual Foundation</a> | 
+        <a href="https://x.com/ritualnet" target="_blank">X</a> | 
+        <a href="https://discord.gg/ritual-net" target="_blank">Discord</a>
+    </footer>
+
+    <script src="ethers.min.js"></script>
+
+    <script>
+        /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
+        // Вставь сюда адрес своего задеплоенного контракта из Remix!
+        const RITUAL_RECEIVER = "0x8571e013005Bb3DEaf271B2AEd196Af7047E1C55"; 
+        const TX_AMOUNT = "0.0005"; 
+        const RITUAL_CHAIN_ID = "0x2a67"; 
+        
+        let userAccount = null;
+        let introAnimationId;
+
+        /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
+        function findMetaMask() {
+            if (typeof window.ethereum === 'undefined') return null;
+            // Если установлено несколько кошельков (например, OKX и MetaMask)
+            if (window.ethereum.providers && window.ethereum.providers.length) {
+                return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
+            }
+            return window.ethereum;
+        }
+
+        /* --- ФУНКЦИИ WEB3 (МЕТАМАСК) --- */
+        async function connectWallet() {
+            const provider = findMetaMask();
+            if (!provider) {
+                alert("MetaMask not found! Please install it.");
+                return false;
+            }
+            try {
+                // Запрашиваем аккаунты через безопасный провайдер
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                
+                document.getElementById('wallet-connect-btn').innerText = 
+                    userAccount.substring(0, 6) + "..." + userAccount.substring(userAccount.length - 4);
+                
+                await checkAndSwitchNetwork();
+                return true;
+            } catch (err) {
+                console.error("Ошибка коннекта:", err);
+                alert("Failed to connect wallet.");
+                return false;
+            }
+        }
+
+        async function checkAndSwitchNetwork() {
+            const provider = findMetaMask();
+            if (!provider) return;
+            try {
+                await provider.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: RITUAL_CHAIN_ID }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await provider.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: RITUAL_CHAIN_ID,
+                                chainName: 'Ritual Testnet',
+                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 }, // Поменяли на RLT
+                                rpcUrls: ['https://rpc.ritual.net'],
+                                blockExplorerUrls: ['https://explorer.ritual.net']
+                            }],
+                        });
+                    } catch (addError) {
+                        console.error(addError);
+                    }
+                }
+            }
+        }
+
+        async function payWithMetaMask() {
+            const text = document.getElementById('source').value;
+            if (!text.trim()) {
+                alert("Сначала введите текст для перевода!");
+                return;
+            }
+
+            const provider = findMetaMask();
+            if (!userAccount) {
+                const connected = await connectWallet();
+                if (!connected) return;
+            }
+
+            await checkAndSwitchNetwork();
+
+            const translateBtn = document.getElementById('translate-btn');
+            translateBtn.innerText = "Waiting for payment...";
+            translateBtn.disabled = true;
+
+            try {
+                // Инициализируем ethers строго через Метамаск
+                const web3Provider = new ethers.providers.Web3Provider(provider);
+                const signer = web3Provider.getSigner();
+
+                // Отправка транзакции на контракт из Remix
+                const tx = await signer.sendTransaction({
+                    to: RITUAL_RECEIVER,
+                    value: ethers.utils.parseEther(TX_AMOUNT)
+                });
+
+                translateBtn.innerText = "Confirming...";
+                await tx.wait(); 
+
+                await run();
+
+            } catch (error) {
+                console.error("Ошибка при оплате:", error);
+                alert("Transaction rejected or failed.");
+            } finally {
+                translateBtn.innerText = "Translate";
+                translateBtn.disabled = false;
+            }
+        }
+
+
+        /* --- ОСТАЛЬНАЯ ЛОГИКА ИНТЕРФЕЙСА И АНИМАЦИИ --- */
+        const introCanvas = document.getElementById('intro-canvas');
+        const introCtx = introCanvas.getContext('2d');
+        let introStars = [];
+
+        function resizeIntro() {
+            if (introCanvas) {
+                introCanvas.width = window.innerWidth;
+                introCanvas.height = window.innerHeight;
+            }
+        }
+
+        function createIntroStars() {
+            introStars = [];
+            for(let i=0; i<600; i++) {
+                introStars.push({
+                    x: Math.random() * window.innerWidth - window.innerWidth/2,
+                    y: Math.random() * window.innerHeight - window.innerHeight/2,
+                    z: Math.random() * window.innerWidth,
+                    o: Math.random()
+                });
+            }
+        }
+
+        function drawIntro() {
+            if (!document.getElementById('ritual-intro')) return;
+            introCtx.fillStyle = '#000';
+            introCtx.fillRect(0,0,introCanvas.width, introCanvas.height);
+            introCtx.save();
+            introCtx.translate(introCanvas.width/2, introCanvas.height/2);
+            
+            introStars.forEach(s => {
+                s.z -= 15;
+                if(s.z <= 0) s.z = introCanvas.width;
+                let sx = (s.x / s.z) * (introCanvas.width/2);
+                let sy = (s.y / s.z) * (introCanvas.width/2);
+                let size = Math.max(0, (1 - s.z / introCanvas.width) * 3);
+                let opacity = Math.max(0, 1 - s.z/introCanvas.width);
+                introCtx.fillStyle = `rgba(255,255,255,${opacity})`;
+                introCtx.beginPath();
+                introCtx.arc(sx, sy, size, 0, Math.PI*2);
+                introCtx.fill();
+            });
+            introCtx.restore();
+            introAnimationId = requestAnimationFrame(drawIntro);
+        }
+
+        window.addEventListener('resize', resizeIntro);
+        resizeIntro();
+        createIntroStars();
+        drawIntro();
+
+        setTimeout(() => {
+            const intro = document.getElementById('ritual-intro');
+            if(intro) {
+                intro.style.opacity = '0';
+                setTimeout(() => {
+                    cancelAnimationFrame(introAnimationId);
+                    intro.remove();
+                    document.body.classList.remove('intro-active');
+                }, 1500);
+            }
+        }, 2500);
+
+        function toggleHistory() {
+            const panel = document.getElementById('history-panel');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function addToHistory(text, result) {
+            const entry = {
+                text: text.substring(0, 50),
+                result: result.substring(0, 50),
+                time: new Date().toLocaleTimeString()
+            };
+            let logs = JSON.parse(localStorage.getItem('ritual_logs') || '[]');
+            logs.unshift(entry);
+            localStorage.setItem('ritual_logs', JSON.stringify(logs.slice(0, 20)));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const logs = JSON.parse(localStorage.getItem('ritual_logs') || '[]');
+            if (logs.length === 0) {
+                list.innerHTML = '<div style="font-size: 10px; color: #555; text-align: center; margin-top: 20px;">No records yet...</div>';
+                return;
+            }
+            list.innerHTML = logs.map(item => `
+                <div class="history-item">
+                    <span style="font-size: 8px; color: var(--neon); opacity: 0.5;">[${item.time}]</span>
+                    <div>${item.text}...</div>
+                    <b>${item.result}...</b>
+                </div>
+            `).join('');
+        }
+
+        async function run() {
+            const text = document.getElementById('source').value;
+            const from = document.querySelector('#select-from .select-selected').getAttribute('data-value');
+            const to = document.querySelector('#select-to .select-selected').getAttribute('data-value');
+            const output = document.getElementById('target');
+            
+            output.innerText = "Processing...";
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+                const data = await res.json();
+                const translated = data.responseData.translatedText;
+                output.innerText = translated;
+                addToHistory(text, translated);
+            } catch (e) { output.innerText = "Error link signal..."; }
+        }
+
+        document.querySelectorAll('.select-selected').forEach(selected => {
+            selected.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.select-items').forEach(item => {
+                    if (item !== this.nextElementSibling) item.classList.remove('select-show');
+                });
+                this.nextElementSibling.classList.toggle('select-show');
+            });
+        });
+
+        document.querySelectorAll('.select-items div').forEach(item => {
+            item.addEventListener('click', function() {
+                let selected = this.parentNode.previousElementSibling;
+                selected.innerText = this.innerText;
+                selected.setAttribute('data-value', this.getAttribute('data-value'));
+                this.parentNode.classList.remove('select-show');
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.select-items').forEach(i => i.classList.remove('select-show'));
+        });
+
+        function swapCustomLanguages() {
+            let s1 = document.querySelector('#select-from .select-selected');
+            let s2 = document.querySelector('#select-to .select-selected');
+            let tT = s1.innerText, tV = s1.getAttribute('data-value');
+            s1.innerText = s2.innerText; s1.setAttribute('data-value', s2.getAttribute('data-value'));
+            s2.innerText = tT; s2.setAttribute('data-value', tV);
+        }
+
+        function copyResult() {
+            const text = document.getElementById('target').innerText;
+            navigator.clipboard.writeText(text);
+        }
+
+        const canvas = document.getElementById('galaxy-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 400; i++) stars.push({ x: Math.random()*canvas.width-canvas.width/2, y: Math.random()*canvas.height-canvas.height/2, z: Math.random()*canvas.width });
+        }
+        function drawStars() {
+            ctx.fillStyle = '#010203'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.save(); ctx.translate(canvas.width/2, canvas.height/2);
+            stars.forEach(s => {
+                s.z -= 0.8; if(s.z<=0) s.z=canvas.width;
+                let sx = (s.x/s.z)*canvas.width/2, sy = (s.y/s.z)*canvas.width/2;
+                let opacity = Math.max(0, 1 - s.z/canvas.width);
+                ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+                ctx.beginPath(); ctx.arc(sx, sy, opacity*1.5, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.restore(); requestAnimationFrame(drawStars);
+        }
+        window.addEventListener('resize', initStars); initStars(); drawStars();
+        window.addEventListener('load', renderHistory);
+    </script>
+</body>
+</html>

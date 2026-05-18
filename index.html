@@ -285,22 +285,47 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
 
     <script>
+        // ГЛОБАЛЬНЫЕ НАСТРОЙКИ (Исправлено: объявлены обязательные переменные)
+        let userAccount = null;
+        const RITUAL_RECEIVER = "0xF2C9449B44F695Ec293315a6b0cDb2E660486D45"; // ЗАМЕНИТЕ НА СВОЙ АДРЕС ДЛЯ ТЕСТОВ
+        const TX_AMOUNT = "0.001"; // Количество токенов RIT для отправки
+
+        function findMetaMask() {
+            if (typeof window.ethereum !== 'undefined') {
+                return window.ethereum;
+            }
+            alert("MetaMask не найден! Установите расширение.");
+            return null;
+        }
+
+        async function connectWallet() {
+            const provider = findMetaMask();
+            if (!provider) return false;
+            try {
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                document.getElementById('wallet-connect-btn').innerText = userAccount.substring(0,6) + "..." + userAccount.substring(38);
+                return true;
+            } catch (err) {
+                console.error("Ошибка авторизации:", err);
+                return false;
+            }
+        }
+
         async function checkAndSwitchNetwork() {
             const provider = findMetaMask();
             if (!provider) return;
 
-            // ТОЧНЫЕ НАСТРОЙКИ СЕТИ ИЗ ТВОЕГО МЕТАМАСКА (Chain ID: 1979 -> 0x7bb)
-            const CORRECT_HEX_CHAIN_ID = "0x7bb"; 
-            const CORRECT_RPC_URL = "https://rpc.ritualfoundation.org";
+            const CORRECT_HEX_CHAIN_ID = "0x7bb"; // 1979 в HEX
+            // ОБНОВЛЕННЫЙ RPC-URL (старый rpc.ritualfoundation.org часто недоступен)
+            const CORRECT_RPC_URL = "https://rpc.ritual.net"; 
 
             try {
-                // Сайт сам вежливо просит кошелек переключиться на нужную сеть Ritual
                 await provider.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: CORRECT_HEX_CHAIN_ID }],
                 });
             } catch (switchError) {
-                // Если сети 1979 вообще нет в кошельке у человека, сайт САМ её добавит чисто и без дубликатов
                 if (switchError.code === 4902) {
                     try {
                         await provider.request({
@@ -309,7 +334,7 @@
                                 chainId: CORRECT_HEX_CHAIN_ID,
                                 chainName: 'Ritual Testnet',
                                 nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
-                                rpcUrls: [CORRECT_RPC_URL],
+                                rpcUrls: [CORRECT_RPC_URL, "https://ritual-testnet.rpc.caldera.xyz/http"],
                                 blockExplorerUrls: null
                             }],
                         });
@@ -325,17 +350,18 @@
         async function payWithMetaMask() {
             const text = document.getElementById('source').value;
             if (!text.trim()) {
-                alert("Сначала введите text для перевода!");
+                alert("Сначала введите текст для перевода!");
                 return;
             }
 
             const provider = findMetaMask();
+            if (!provider) return;
+
             if (!userAccount) {
                 const connected = await connectWallet();
                 if (!connected) return;
             }
 
-            // Сначала ПРИНУДИТЕЛЬНО переключаем сеть, защищая код от ошибок RPC
             await checkAndSwitchNetwork();
 
             const translateBtn = document.getElementById('translate-btn');
@@ -365,8 +391,8 @@
             }
         }
 
-
         /* --- ОСТАЛЬНАЯ ЛОГИКА ИНТЕРФЕЙСА И АНИМАЦИИ --- */
+        let introAnimationId;
         const introCanvas = document.getElementById('intro-canvas');
         const introCtx = introCanvas.getContext('2d');
         let introStars = [];

@@ -281,12 +281,11 @@
         <a href="https://discord.gg/ritual-net" target="_blank">Discord</a>
     </footer>
 
-    <script src="ethers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
     <script>
         /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
-        // Вставь сюда адрес своего задеплоенного контракта из Remix!
-        const RITUAL_RECEIVER = "0x8571e013005Bb3DEaf271B2AEd196Af7047E1C55"; 
+        const RITUAL_RECEIVER = "0x81480EeF732126c392E59C09645723bf0cF1D0C8"; 
         const TX_AMOUNT = "0.0005"; 
         const RITUAL_CHAIN_ID = "0x2a67"; 
         
@@ -296,7 +295,6 @@
         /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
         function findMetaMask() {
             if (typeof window.ethereum === 'undefined') return null;
-            // Если установлено несколько кошельков (например, OKX и MetaMask)
             if (window.ethereum.providers && window.ethereum.providers.length) {
                 return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
             }
@@ -311,7 +309,6 @@
                 return false;
             }
             try {
-                // Запрашиваем аккаунты через безопасный провайдер
                 const accounts = await provider.request({ method: 'eth_requestAccounts' });
                 userAccount = accounts[0];
                 
@@ -343,7 +340,7 @@
                             params: [{
                                 chainId: RITUAL_CHAIN_ID,
                                 chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 }, // Поменяли на RLT
+                                nativeCurrency: { name: 'Ritual', symbol: 'RTL', decimals: 18 },
                                 rpcUrls: ['https://rpc.ritual.net'],
                                 blockExplorerUrls: ['https://explorer.ritual.net']
                             }],
@@ -375,11 +372,10 @@
             translateBtn.disabled = true;
 
             try {
-                // Инициализируем ethers строго через Метамаск
                 const web3Provider = new ethers.providers.Web3Provider(provider);
                 const signer = web3Provider.getSigner();
 
-                // Отправка транзакции на контракт из Remix
+                // Прямой вызов окна MetaMask на отправку 0.0005 RTL на адрес контракта
                 const tx = await signer.sendTransaction({
                     to: RITUAL_RECEIVER,
                     value: ethers.utils.parseEther(TX_AMOUNT)
@@ -388,6 +384,7 @@
                 translateBtn.innerText = "Confirming...";
                 await tx.wait(); 
 
+                // Выполнение перевода после успешной транзакции
                 await run();
 
             } catch (error) {
@@ -398,7 +395,6 @@
                 translateBtn.disabled = false;
             }
         }
-
 
         /* --- ОСТАЛЬНАЯ ЛОГИКА ИНТЕРФЕЙСА И АНИМАЦИИ --- */
         const introCanvas = document.getElementById('intro-canvas');

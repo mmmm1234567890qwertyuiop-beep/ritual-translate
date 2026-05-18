@@ -285,71 +285,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
 
     <script>
-        /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
-        const RITUAL_RECEIVER = "0x8571e013005Bb3DEaf271B2AEd196Af7047E1C55"; 
-        const TX_AMOUNT = "0.0005"; 
-        const RITUAL_CHAIN_ID = "0x7bb"; 
-        
-        let userAccount = null;
-        let introAnimationId;
-
-        /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
-        function findMetaMask() {
-            if (typeof window.ethereum === 'undefined') return null;
-            if (window.ethereum.providers && window.ethereum.providers.length) {
-                return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
-            }
-            return window.ethereum;
-        }
-
-        /* --- ФУНКЦИИ WEB3 (МЕТАМАСК) --- */
-        async function connectWallet() {
-            const provider = findMetaMask();
-            if (!provider) {
-                alert("MetaMask not found! Please install it.");
-                return false;
-            }
-            try {
-                const accounts = await provider.request({ method: 'eth_requestAccounts' });
-                userAccount = accounts[0];
-                
-                document.getElementById('wallet-connect-btn').innerText = 
-                    userAccount.substring(0, 6) + "..." + userAccount.substring(userAccount.length - 4);
-                
-                await checkAndSwitchNetwork();
-                return true;
-            } catch (err) {
-                console.error("Ошибка коннекта:", err);
-                alert("Failed to connect wallet.");
-                return false;
-            }
-        }
-
         async function checkAndSwitchNetwork() {
             const provider = findMetaMask();
             if (!provider) return;
+
+            // ТОЧНЫЕ НАСТРОЙКИ СЕТИ ИЗ ТВОЕГО МЕТАМАСКА (Chain ID: 1979 -> 0x7bb)
+            const CORRECT_HEX_CHAIN_ID = "0x7bb"; 
+            const CORRECT_RPC_URL = "https://rpc.ritualfoundation.org";
+
             try {
+                // Сайт сам вежливо просит кошелек переключиться на нужную сеть Ritual
                 await provider.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: RITUAL_CHAIN_ID }],
+                    params: [{ chainId: CORRECT_HEX_CHAIN_ID }],
                 });
             } catch (switchError) {
+                // Если сети 1979 вообще нет в кошельке у человека, сайт САМ её добавит чисто и без дубликатов
                 if (switchError.code === 4902) {
                     try {
                         await provider.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
-                                chainId: RITUAL_CHAIN_ID,
+                                chainId: CORRECT_HEX_CHAIN_ID,
                                 chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 },
-                                // ИСПРАВЛЕНИЕ: Добавили альтернативный рабочий RPC-шлюз
-                                rpcUrls: ['https://rpc.ritual.net', 'https://ritual-testnet.rpc.thirdweb.com'],
-                                blockExplorerUrls: ['https://explorer.ritual.net']
+                                nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
+                                rpcUrls: [CORRECT_RPC_URL],
+                                blockExplorerUrls: null
                             }],
                         });
                     } catch (addError) {
-                        console.error(addError);
+                        console.error("Пользователь отменил добавление сети:", addError);
                     }
+                } else {
+                    console.error("Ошибка при переключении сети:", switchError);
                 }
             }
         }
@@ -367,6 +335,7 @@
                 if (!connected) return;
             }
 
+            // Сначала ПРИНУДИТЕЛЬНО переключаем сеть, защищая код от ошибок RPC
             await checkAndSwitchNetwork();
 
             const translateBtn = document.getElementById('translate-btn');
@@ -374,7 +343,6 @@
             translateBtn.disabled = true;
 
             try {
-                // ИСПРАВЛЕНИЕ: Безопасное подключение веб-провайдера без вызова сторонних eval
                 const web3Provider = new ethers.providers.Web3Provider(provider, "any");
                 const signer = web3Provider.getSigner();
 

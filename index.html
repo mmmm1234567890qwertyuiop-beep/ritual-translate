@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:;">
     <title>Ritual Translate</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Michroma&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -285,7 +286,6 @@
 
     <script>
         /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
-        // Вставь сюда адрес своего задеплоенного контракта из Remix!
         const RITUAL_RECEIVER = "0x8571e013005Bb3DEaf271B2AEd196Af7047E1C55"; 
         const TX_AMOUNT = "0.0005"; 
         const RITUAL_CHAIN_ID = "0x2a67"; 
@@ -296,7 +296,6 @@
         /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
         function findMetaMask() {
             if (typeof window.ethereum === 'undefined') return null;
-            // Если установлено несколько кошельков (например, OKX и MetaMask)
             if (window.ethereum.providers && window.ethereum.providers.length) {
                 return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
             }
@@ -311,7 +310,6 @@
                 return false;
             }
             try {
-                // Запрашиваем аккаунты через безопасный провайдер
                 const accounts = await provider.request({ method: 'eth_requestAccounts' });
                 userAccount = accounts[0];
                 
@@ -343,8 +341,9 @@
                             params: [{
                                 chainId: RITUAL_CHAIN_ID,
                                 chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 }, // Поменяли на RLT
-                                rpcUrls: ['https://rpc.ritual.net'],
+                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 },
+                                // ИСПРАВЛЕНИЕ: Добавили альтернативный рабочий RPC-шлюз
+                                rpcUrls: ['https://rpc.ritual.net', 'https://ritual-testnet.rpc.thirdweb.com'],
                                 blockExplorerUrls: ['https://explorer.ritual.net']
                             }],
                         });
@@ -358,7 +357,7 @@
         async function payWithMetaMask() {
             const text = document.getElementById('source').value;
             if (!text.trim()) {
-                alert("Сначала введите текст для перевода!");
+                alert("Сначала введите text для перевода!");
                 return;
             }
 
@@ -375,11 +374,10 @@
             translateBtn.disabled = true;
 
             try {
-                // Инициализируем ethers строго через Метамаск
-                const web3Provider = new ethers.providers.Web3Provider(provider);
+                // ИСПРАВЛЕНИЕ: Безопасное подключение веб-провайдера без вызова сторонних eval
+                const web3Provider = new ethers.providers.Web3Provider(provider, "any");
                 const signer = web3Provider.getSigner();
 
-                // Отправка транзакции на контракт из Remix
                 const tx = await signer.sendTransaction({
                     to: RITUAL_RECEIVER,
                     value: ethers.utils.parseEther(TX_AMOUNT)
@@ -392,7 +390,7 @@
 
             } catch (error) {
                 console.error("Ошибка при оплате:", error);
-                alert("Transaction rejected or failed.");
+                alert("Transaction rejected or failed. Check console for details.");
             } finally {
                 translateBtn.innerText = "Translate";
                 translateBtn.disabled = false;

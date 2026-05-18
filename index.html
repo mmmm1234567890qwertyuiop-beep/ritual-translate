@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:;">
     <title>Ritual Translate</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Michroma&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -284,45 +285,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
 
     <script>
-        /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
-        // Вставь сюда адрес своего задеплоенного контракта из Remix!
-        const RITUAL_RECEIVER = "0x8571e013005Bb3DEaf271B2AEd196Af7047E1C55"; 
-        const TX_AMOUNT = "0.0005"; 
-        const RITUAL_CHAIN_ID = "0x2a67"; 
-        
+        // Инициализируем глобальную переменную для хранения аккаунта
         let userAccount = null;
-        let introAnimationId;
 
-        /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
         function findMetaMask() {
-            if (typeof window.ethereum === 'undefined') return null;
-            // Если установлено несколько кошельков (например, OKX и MetaMask)
-            if (window.ethereum.providers && window.ethereum.providers.length) {
-                return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
+            if (typeof window.ethereum !== 'undefined') {
+                return window.ethereum;
             }
-            return window.ethereum;
+            alert("MetaMask not found!");
+            return null;
         }
 
-        /* --- ФУНКЦИИ WEB3 (МЕТАМАСК) --- */
+        // Кнопка в шапке вызывает эту функцию
         async function connectWallet() {
             const provider = findMetaMask();
-            if (!provider) {
-                alert("MetaMask not found! Please install it.");
-                return false;
-            }
+            if (!provider) return false;
             try {
-                // Запрашиваем аккаунты через безопасный провайдер
                 const accounts = await provider.request({ method: 'eth_requestAccounts' });
                 userAccount = accounts[0];
-                
-                document.getElementById('wallet-connect-btn').innerText = 
-                    userAccount.substring(0, 6) + "..." + userAccount.substring(userAccount.length - 4);
-                
-                await checkAndSwitchNetwork();
+                // Меняем текст кнопки на сокращенный адрес кошелька
+                document.getElementById('wallet-connect-btn').innerText = userAccount.substring(0,6) + "..." + userAccount.substring(38);
                 return true;
             } catch (err) {
-                console.error("Ошибка коннекта:", err);
-                alert("Failed to connect wallet.");
+                console.error("Ошибка при подключении:", err);
                 return false;
             }
         }
@@ -330,10 +315,15 @@
         async function checkAndSwitchNetwork() {
             const provider = findMetaMask();
             if (!provider) return;
+
+            const CORRECT_HEX_CHAIN_ID = "0x7bb"; 
+            // ИСПРАВЛЕНО: Новый рабочий эндпоинт RPC взамен упавшего старого
+            const CORRECT_RPC_URL = "https://rpc.ritual.net"; 
+
             try {
                 await provider.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: RITUAL_CHAIN_ID }],
+                    params: [{ chainId: CORRECT_HEX_CHAIN_ID }],
                 });
             } catch (switchError) {
                 if (switchError.code === 4902) {
@@ -341,16 +331,18 @@
                         await provider.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
-                                chainId: RITUAL_CHAIN_ID,
+                                chainId: CORRECT_HEX_CHAIN_ID,
                                 chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RLT', decimals: 18 }, // Поменяли на RLT
-                                rpcUrls: ['https://rpc.ritual.net'],
-                                blockExplorerUrls: ['https://explorer.ritual.net']
+                                nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
+                                rpcUrls: [CORRECT_RPC_URL, "https://ritual-testnet.rpc.caldera.xyz/http"],
+                                blockExplorerUrls: null
                             }],
                         });
                     } catch (addError) {
-                        console.error(addError);
+                        console.error("Пользователь отменил добавление сети:", addError);
                     }
+                } else {
+                    console.error("Ошибка при переключении сети:", switchError);
                 }
             }
         }
@@ -358,11 +350,14 @@
         async function payWithMetaMask() {
             const text = document.getElementById('source').value;
             if (!text.trim()) {
-                alert("Сначала введите текст для перевода!");
+                alert("Сначала введите text для перевода!");
                 return;
             }
 
             const provider = findMetaMask();
+            if (!provider) return;
+
+            // ИСПРАВЛЕНО: Если кошелек уже приконнекчен кнопкой сверху, заново окно запроса вызывать НЕ БУДЕТ
             if (!userAccount) {
                 const connected = await connectWallet();
                 if (!connected) return;
@@ -375,11 +370,9 @@
             translateBtn.disabled = true;
 
             try {
-                // Инициализируем ethers строго через Метамаск
-                const web3Provider = new ethers.providers.Web3Provider(provider);
+                const web3Provider = new ethers.providers.Web3Provider(provider, "any");
                 const signer = web3Provider.getSigner();
 
-                // Отправка транзакции на контракт из Remix
                 const tx = await signer.sendTransaction({
                     to: RITUAL_RECEIVER,
                     value: ethers.utils.parseEther(TX_AMOUNT)
@@ -392,7 +385,7 @@
 
             } catch (error) {
                 console.error("Ошибка при оплате:", error);
-                alert("Transaction rejected or failed.");
+                alert("Transaction rejected or failed. Check console for details.");
             } finally {
                 translateBtn.innerText = "Translate";
                 translateBtn.disabled = false;
@@ -401,6 +394,7 @@
 
 
         /* --- ОСТАЛЬНАЯ ЛОГИКА ИНТЕРФЕЙСА И АНИМАЦИИ --- */
+        let introAnimationId;
         const introCanvas = document.getElementById('intro-canvas');
         const introCtx = introCanvas.getContext('2d');
         let introStars = [];

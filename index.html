@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ritual Translate</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght=700;900&family=Michroma&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Michroma&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon: #00ff88;
@@ -347,8 +347,8 @@
                                 chainId: hexChainId,
                                 chainName: 'Ritual Testnet',
                                 nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
-                                rpcUrls: ['https://rpc.ritualfoundation.org'],
-                                blockExplorerUrls: ['https://explorer.ritualfoundation.org']
+                                rpcUrls: ['https://rpc.ritualfoundation.org'], // Проверь, чтобы было так
+                                blockExplorerUrls: ['https://explorer.ritualfoundation.org'] // Добавили эксплорер из твоих данных
                             }],
                         });
                     } catch (addError) {
@@ -513,28 +513,27 @@
             } catch (e) { output.innerText = "Error link signal..."; }
         }
 
-        /* --- ДИНАМИЧЕСКИЕ ОБРАБОТЧИКИ СЕЛЕКТОРОВ --- */
-        document.body.addEventListener('click', function(e) {
-            const selectedBox = e.target.closest('.select-selected');
-            if (selectedBox) {
+        document.querySelectorAll('.select-selected').forEach(selected => {
+            selected.addEventListener('click', function(e) {
                 e.stopPropagation();
                 document.querySelectorAll('.select-items').forEach(item => {
-                    if (item !== selectedBox.nextElementSibling) item.classList.remove('select-show');
+                    if (item !== this.nextElementSibling) item.classList.remove('select-show');
                 });
-                selectedBox.nextElementSibling.classList.toggle('select-show');
-            } else {
-                document.querySelectorAll('.select-items').forEach(i => i.classList.remove('select-show'));
-            }
+                this.nextElementSibling.classList.toggle('select-show');
+            });
         });
 
-        document.body.addEventListener('click', function(e) {
-            const item = e.target.closest('.select-items div');
-            if (item) {
-                let selected = item.parentNode.previousElementSibling;
-                selected.innerText = item.innerText;
-                selected.setAttribute('data-value', item.getAttribute('data-value'));
-                item.parentNode.classList.remove('select-show');
-            }
+        document.querySelectorAll('.select-items div').forEach(item => {
+            item.addEventListener('click', function() {
+                let selected = this.parentNode.previousElementSibling;
+                selected.innerText = this.innerText;
+                selected.setAttribute('data-value', this.getAttribute('data-value'));
+                this.parentNode.classList.remove('select-show');
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.select-items').forEach(i => i.classList.remove('select-show'));
         });
 
         function swapCustomLanguages() {

@@ -236,8 +236,6 @@
                         <div data-value="ko-KR">Korean</div>
                         <div data-value="it-IT">Italian</div>
                         <div data-value="ar-SA">Arabic</div>
-                        <div data-value="en-NG">Nigerian</div>
-                        <div data-value="hi-IN">Indian</div>
                     </div>
                 </div>
 
@@ -256,8 +254,6 @@
                         <div data-value="ko-KR">Korean</div>
                         <div data-value="it-IT">Italian</div>
                         <div data-value="ar-SA">Arabic</div>
-                        <div data-value="en-NG">Nigerian</div>
-                        <div data-value="hi-IN">Indian</div>
                     </div>
                 </div>
             </div>
@@ -341,16 +337,16 @@
             } catch (switchError) {
                 if (switchError.code === 4902) {
                     try {
-                        await provider.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: hexChainId,
-                                chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
-                                rpcUrls: ['https://rpc.ritualfoundation.org'], // Проверь, чтобы было так
-                                blockExplorerUrls: ['https://explorer.ritualfoundation.org'] // Добавили эксплорер из твоих данных
-                            }],
-                        });
+await provider.request({
+    method: 'wallet_addEthereumChain',
+    params: [{
+        chainId: hexChainId,
+        chainName: 'Ritual Testnet',
+        nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
+        rpcUrls: ['https://rpc.ritualfoundation.org'], // Проверь, чтобы было так
+        blockExplorerUrls: ['https://explorer.ritualfoundation.org'] // Добавили эксплорер из твоих данных
+    }],
+});
                     } catch (addError) {
                         console.error(addError);
                     }

@@ -513,7 +513,7 @@
             } catch (e) { output.innerText = "Error link signal..."; }
         }
 
-        // Обновленные обработчики для кастомных селектов, работающие с динамическим DOM
+        /* --- ДИНАМИЧЕСКИЕ ОБРАБОТЧИКИ СЕЛЕКТОРОВ --- */
         document.body.addEventListener('click', function(e) {
             const selectedBox = e.target.closest('.select-selected');
             if (selectedBox) {

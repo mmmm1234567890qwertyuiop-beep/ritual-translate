@@ -284,10 +284,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
     <script>
-        /* --- НАСТРОЙКИ СЕТИ RITUAL TESTNET --- */
-        const RITUAL_RECEIVER = "0x81480EeF732126c392E59C09645723bf0cF1D0C8"; 
+        /* --- НАСТРОЙКИ АДРЕСА И СЕТИ --- */
+        const RITUAL_RECEIVER = "0xF2C94334bD48Bd6001617973B01EC63bE4Db6D45"; 
         const TX_AMOUNT = "0.0005"; 
-        const RITUAL_CHAIN_ID = "0x2a67"; 
+        const RITUAL_CHAIN_ID = "10855"; 
         
         let userAccount = null;
         let introAnimationId;
@@ -327,10 +327,12 @@
         async function checkAndSwitchNetwork() {
             const provider = findMetaMask();
             if (!provider) return;
+            
+            const hexChainId = "0x" + parseInt(RITUAL_CHAIN_ID).toString(16);
             try {
                 await provider.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: RITUAL_CHAIN_ID }],
+                    params: [{ chainId: hexChainId }],
                 });
             } catch (switchError) {
                 if (switchError.code === 4902) {
@@ -338,11 +340,11 @@
                         await provider.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
-                                chainId: RITUAL_CHAIN_ID,
+                                chainId: hexChainId,
                                 chainName: 'Ritual Testnet',
-                                nativeCurrency: { name: 'Ritual', symbol: 'RTL', decimals: 18 },
-                                rpcUrls: ['https://rpc.ritual.net'],
-                                blockExplorerUrls: ['https://explorer.ritual.net']
+                                nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
+                                rpcUrls: ['https://rpc.ritualfoundation.org'],
+                                blockExplorerUrls: []
                             }],
                         });
                     } catch (addError) {
@@ -375,7 +377,6 @@
                 const web3Provider = new ethers.providers.Web3Provider(provider);
                 const signer = web3Provider.getSigner();
 
-                // Прямой вызов окна MetaMask на отправку 0.0005 RTL на адрес контракта
                 const tx = await signer.sendTransaction({
                     to: RITUAL_RECEIVER,
                     value: ethers.utils.parseEther(TX_AMOUNT)
@@ -384,7 +385,6 @@
                 translateBtn.innerText = "Confirming...";
                 await tx.wait(); 
 
-                // Выполнение перевода после успешной транзакции
                 await run();
 
             } catch (error) {
